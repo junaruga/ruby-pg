@@ -35,6 +35,7 @@ before_install:
   - |
     if [ -z "$PGCROSS" ]; then
       wget http://get.enterprisedb.com/postgresql/postgresql-$PGVERSION.run
+      ls abc
       chmod +x postgresql-$PGVERSION.run
       sudo ./postgresql-$PGVERSION.run --mode unattended --unattendedmodeui minimal
     fi

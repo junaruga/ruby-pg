@@ -8,6 +8,7 @@ require 'pg'
 DEFAULT_TEST_DIR_STR = File.join(Dir.pwd, "tmp_test_specs")
 TEST_DIR_STR = ENV['RUBY_PG_TEST_DIR'] || DEFAULT_TEST_DIR_STR
 TEST_DIRECTORY = Pathname.new(TEST_DIR_STR)
+TEST_TRACE_LOGFILE = ENV['RUBY_PG_TEST_TRACE_LOGFILE'] ? true : false
 
 module PG::TestingHelpers
 
@@ -225,6 +226,11 @@ module PG::TestingHelpers
 			$stderr.puts "%p during test setup: %s" % [ err.class, err.message ]
 			$stderr.puts "See #{@logfile} for details."
 			$stderr.puts *err.backtrace if $DEBUG
+			if TEST_TRACE_LOGFILE
+				puts '-' * 10
+				puts File.read(@logfile)
+				puts '-' * 10
+			end
 			fail
 		end
 

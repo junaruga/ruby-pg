@@ -3121,6 +3121,7 @@ pgconn_get_last_result(VALUE self)
 	VALUE rb_pgresult = Qnil;
 	PGresult *cur, *prev;
 
+	printf("[DEBUG] pg_connection.c pgconn_get_last_result start\n");
 
 	cur = prev = NULL;
 	while ((cur = gvl_PQgetResult(conn)) != NULL) {
@@ -3135,8 +3136,26 @@ pgconn_get_last_result(VALUE self)
 	}
 
 	if (prev) {
+		/* PGresult *prev
+		/usr/include/libpq-fe.h PQntuples, and etc.
+		*/
+		/*
+		printf("[DEBUG] pg_connection.c  pgconn_get_last_result PGresult (prev) ntups: [%d], numAttributes: [%d], tupArrSize: [%d], numParameters: [%d]\n",
+			prev->ntups, prev->numAttributes, prev->tupArrSize, prev->numParameters);
+		*/
+		int ntuples = PQntuples(prev);
+		int nfields = PQnfields(prev);
+		printf("[DEBUG] pg_connection.c  pgconn_get_last_result PGresult (prev) ntups: [%d], nfields: [%d]\n", ntuples, nfields);
+		if (ntuples > 0 && nfields > 0) {
+			printf("[DEBUG] pg_connection.c  pgconn_get_last_result PGresult (prev) field name 0: [%s]\n", PQfname(prev, 0));
+			printf("[DEBUG] pg_connection.c  pgconn_get_last_result PGresult (prev) value: [%s]\n", PQgetvalue(prev, 0, 0));
+		}
+
 		rb_pgresult = pg_new_result( prev, self );
 		pg_result_check(rb_pgresult);
+		printf("[DEBUG] pg_connection.c  pgconn_get_last_result after pg_result_check\n");
+
+		/* Ruby PG::Result rb_pgresult */
 	}
 
 	return rb_pgresult;
@@ -3218,12 +3237,18 @@ pgconn_async_exec_params(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_pgresult = Qnil;
 
+	printf("[DEBUG] pg_connection.c pgconn_async_exec_params start.\n");
+
 	pgconn_discard_results( self );
 	/* If called with no or nil parameters, use PQsendQuery for compatibility */
 	if ( argc == 1 || (argc >= 2 && argc <= 4 && NIL_P(argv[1]) )) {
 		pg_deprecated(3, ("forwarding async_exec_params to async_exec is deprecated"));
 		pgconn_send_query( argc, argv, self );
 	} else {
+		printf("[DEBUG] pg_connection.c pgconn_send_query_params. argc: [%d]\n", argc);
+		rb_p(argv[0]);
+		rb_p(argv[1]);
+		rb_p(argv[2]);
 		pgconn_send_query_params( argc, argv, self );
 	}
 	pgconn_block( 0, NULL, self ); /* wait for input (without blocking) before reading the last result */
@@ -3232,6 +3257,9 @@ pgconn_async_exec_params(int argc, VALUE *argv, VALUE self)
 	if ( rb_block_given_p() ) {
 		return rb_ensure( rb_yield, rb_pgresult, pg_result_clear, rb_pgresult );
 	}
+	/* VALUE: result */
+	rb_p(rb_pgresult);
+
 	return rb_pgresult;
 }
 

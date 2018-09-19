@@ -127,6 +127,8 @@ pg_new_result2(PGresult *result, VALUE rb_pgconn)
 	VALUE self = pgresult_s_allocate( rb_cPGresult );
 	t_pg_result *this;
 
+	printf("[DEBUG] pg_new_result2 start\n");
+
 	this = (t_pg_result *)xmalloc(sizeof(*this) +  sizeof(*this->fnames) * nfields);
 	RTYPEDDATA_DATA(self) = this;
 

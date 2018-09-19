@@ -183,23 +183,49 @@ describe 'Basic type mapping' do
 				expect( res.getvalue(0,5) ).to eq( '-infinity' )
 			end
 
-			[1, 0].each do |format|
+			# Debug format: 1 => ng case.
+			[1].each do |format|
+			# [1, 0].each do |format|
 				it "should convert format #{format} timestamps per TimestampUtc" do
 					restore_type("timestamp") do
 						PG::BasicTypeRegistry.register_type 0, 'timestamp', nil, PG::TextDecoder::TimestampUtc
 						@conn.type_map_for_results = PG::BasicTypeMapForResults.new(@conn)
-						res = @conn.exec_params( "SELECT CAST('2013-07-31 23:58:59+02' AS TIMESTAMP WITHOUT TIME ZONE),
-																			CAST('1913-12-31 23:58:59.1231-03' AS TIMESTAMP WITHOUT TIME ZONE),
-																			CAST('4714-11-24 23:58:59.1231-03 BC' AS TIMESTAMP WITHOUT TIME ZONE),
-																			CAST('294276-12-31 23:58:59.1231-03' AS TIMESTAMP WITHOUT TIME ZONE),
-																			CAST('infinity' AS TIMESTAMP WITHOUT TIME ZONE),
-																			CAST('-infinity' AS TIMESTAMP WITHOUT TIME ZONE)", [], format )
-						expect( res.getvalue(0,0).iso8601(3) ).to eq( Time.utc(2013, 7, 31, 23, 58, 59).iso8601(3) )
-						expect( res.getvalue(0,1).iso8601(3) ).to eq( Time.utc(1913, 12, 31, 23, 58, 59.1231).iso8601(3) )
-						expect( res.getvalue(0,2).iso8601(3) ).to eq( Time.utc(-4713, 11, 24, 23, 58, 59.1231).iso8601(3) )
-						expect( res.getvalue(0,3).iso8601(3) ).to eq( Time.utc(294276, 12, 31, 23, 58, 59.1231).iso8601(3) )
-						expect( res.getvalue(0,4) ).to eq( 'infinity' )
-						expect( res.getvalue(0,5) ).to eq( '-infinity' )
+						# res = @conn.exec_params( "SELECT CAST('2013-07-31 23:58:59+02' AS TIMESTAMP WITHOUT TIME ZONE),
+						# 													CAST('1913-12-31 23:58:59.1231-03' AS TIMESTAMP WITHOUT TIME ZONE),
+						# 													CAST('4714-11-24 23:58:59.1231-03 BC' AS TIMESTAMP WITHOUT TIME ZONE),
+						# 													CAST('294276-12-31 23:58:59.1231-03' AS TIMESTAMP WITHOUT TIME ZONE),
+						# 													CAST('infinity' AS TIMESTAMP WITHOUT TIME ZONE),
+						# 													CAST('-infinity' AS TIMESTAMP WITHOUT TIME ZONE)", [], format )
+						res = @conn.exec_params( "SELECT CAST('4714-11-24 23:58:59.1231-03 BC' AS TIMESTAMP WITHOUT TIME ZONE)", [], format )
+
+
+						# expect( res.getvalue(0,0).iso8601(3) ).to eq( Time.utc(2013, 7, 31, 23, 58, 59).iso8601(3) )
+						# expect( res.getvalue(0,1).iso8601(3) ).to eq( Time.utc(1913, 12, 31, 23, 58, 59.1231).iso8601(3) )
+
+						puts("[DEBUG] format: #{format}")
+						debug_cmd = %q[echo "SELECT CAST('4714-11-24 23:58:59.1231-03 BC' AS TIMESTAMP WITHOUT TIME ZONE);" | psql --host=localhost --port=54321 test]
+						debug_out = `#{debug_cmd}`
+						puts("[DEBUG] debug_out: #{debug_out}")
+						# => 4714-11-24 23:58:59.1231 BC
+
+						# res.getvalue(0,2) is different on architecture: i686 and armv7hl.
+						# On i686 and armv7hl (error case)
+						# res.getvalue(0,2) => 1956-11-26 05:04:03 UTC
+						#   format 1: => 1956-11-26 05:04:03 UTC => ng
+						#   format 0: => -4713-11-24 23:58:59 UTC => ok
+						# On others: x86_64, ppc64le, aarch64, s390x (ok case)
+						# format 1, 0 common: res.getvalue(0,2) => -4713-11-24 23:58:59 UTC
+						puts("[DEBUG] value: #{res.getvalue(0,0)}")
+						puts("[DEBUG] value iso8601(3): #{res.getvalue(0,0).iso8601(3)}")
+						# Time.utc is correct.
+						puts("[DEBUG] Time.utc: #{Time.utc(-4713, 11, 24, 23, 58, 59.1231)}")
+						puts("[DEBUG] Time.utc iso8601(3): #{Time.utc(-4713, 11, 24, 23, 58, 59.1231).iso8601(3)}")
+						expect( res.getvalue(0,0).iso8601(3) ).to eq( Time.utc(-4713, 11, 24, 23, 58, 59.1231).iso8601(3) )
+
+						# expect( res.getvalue(0,2).iso8601(3) ).to eq( Time.utc(-4713, 11, 24, 23, 58, 59.1231).iso8601(3) )
+						# expect( res.getvalue(0,3).iso8601(3) ).to eq( Time.utc(294276, 12, 31, 23, 58, 59.1231).iso8601(3) )
+						# expect( res.getvalue(0,4) ).to eq( 'infinity' )
+						# expect( res.getvalue(0,5) ).to eq( '-infinity' )
 					end
 				end
 			end

@@ -156,12 +156,15 @@ pg_bin_dec_timestamp(t_pg_coder *conv, const char *val, int len, int tuple, int 
 	int64_t timestamp;
 	struct timespec ts;
 	VALUE t;
+	VALUE sec_str;
+	VALUE sec;
 
 	if( len != sizeof(timestamp) ){
 		rb_raise( rb_eTypeError, "wrong data for timestamp converter in tuple %d field %d length %d", tuple, field, len);
 	}
 
 	timestamp = read_nbo64(val);
+	printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp timestamp (int64_t): [%" PRId64 "]\n", timestamp);
 
 	switch(timestamp){
 		case PG_INT64_MAX:
@@ -171,18 +174,61 @@ pg_bin_dec_timestamp(t_pg_coder *conv, const char *val, int len, int tuple, int 
 		default:
 			/* PostgreSQL's timestamp is based on year 2000 and Ruby's time is based on 1970.
 			 * Adjust the 30 years difference. */
-			ts.tv_sec = (timestamp / 1000000) + 10957L * 24L * 3600L;
-			ts.tv_nsec = (timestamp % 1000000) * 1000;
+			ts.tv_sec = (timestamp / (int64_t)1000000) + 10957L * 24L * 3600L;
+			ts.tv_nsec = (timestamp % (int64_t)1000000) * 1000;
+
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp (timestamp / (int64_t)1000000) (int64_t): [%" PRId64 "]\n", (timestamp / (int64_t)1000000));
+			/*
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp: [%lld.%.9ld]\n", (long long)ts.tv_sec, ts.tv_nsec);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp ts.tv_sec (int64_t): [%" PRId64 "]\n", ts.tv_sec);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp ts.tv_sec lld (long long): [%lld]\n", (long long)ts.tv_sec);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp ts.tv_sec lld: [%lld]\n", ts.tv_sec);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp ts.tv_sec (time_t): [%lld]\n", (time_t)ts.tv_sec);
+			*/
+
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp sizeof(ts.tv_sec): [%ld], PRId64 macro: [%s], sizeof(long long): [%ld], sizeof(long int): [%ld], sizeof(long): [%ld]\n",  sizeof(ts.tv_sec), PRId64, sizeof(long long), sizeof(long int), sizeof(long));
 
 #if (RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 3)) && defined(NEGATIVE_TIME_T)
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow.\n");
+
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow ts.tv_sec (int64_t): [%" PRId64 "], ts.tv_nsec (int64_t): [%" PRId64 "]\n", ts.tv_sec, ts.tv_nsec);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow offset cond: %d\n", (conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL));
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow offset INT_MAX: %d\n", INT_MAX);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow offset INT_MAX-1: %d\n", INT_MAX-1);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow offset: %d\n", (conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL) ? INT_MAX : INT_MAX-1);
+
 			/* Fast path for time conversion */
-			t = rb_time_timespec_new(&ts, conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL ? INT_MAX : INT_MAX-1);
+			/* t = rb_time_timespec_new(&ts, conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL ? INT_MAX : INT_MAX-1); */
+			t = rb_time_timespec_new(&ts, ((conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL) ? INT_MAX : INT_MAX-1));
+
+			rb_p(rb_sprintf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp negative time_t flow VALUE t: %"PRIsVALUE, t));
 #else
-			t = rb_funcall(rb_cTime, rb_intern("at"), 2, LL2NUM(ts.tv_sec), LL2NUM(ts.tv_nsec / 1000));
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp not negative time_t flow.\n");
+
+			/* sec = (sizeof(ts.tv_sec) == sizeof(long long)) ? LL2NUM(ts.tv_sec) : INT2NUM(ts.tv_sec); */
+			/* t = rb_funcall(rb_cTime, rb_intern("at"), 2, sec, LL2NUM(ts.tv_nsec / 1000)); */
+			sec_str = rb_str_new2(sprintf(PRId64, ts.tv_sec));
+			sec = rb_funcall(sec_str, rb_intern("to_i"), 0, NULL);
+
+			/* rb_funcall(rb_mKernel, rb_intern("puts"), 1, rb_funcall(rb_str_new2("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp VALUE sec: "), rb_intern("+"), 1, sec)); */
+			rb_p(rb_sprintf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp VALUE sec: %"PRIsVALUE, sec));
+
+			t = rb_funcall(rb_cTime, rb_intern("at"), 2, sec, LL2NUM(ts.tv_nsec / 1000));
+			/* rb_p(t); */
+			rb_p(rb_sprintf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp VALUE t: %"PRIsVALUE, t));
+
 			if( !(conv->flags & PG_CODER_TIMESTAMP_APP_LOCAL) ) {
 				t = rb_funcall(t, rb_intern("utc"), 0);
 			}
 #endif
+
+			/*
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp VALUE t start\n");
+			rb_p(t);
+			printf("[DEBUG] pg_binary_decoder.c pg_bin_dec_timestamp VALUE t end\n");
+			*/
+
+
 			if( conv->flags & PG_CODER_TIMESTAMP_DB_LOCAL ) {
 				/* interpret it as local time */
 				t = rb_funcall(t, rb_intern("-"), 1, rb_funcall(t, rb_intern("utc_offset"), 0));

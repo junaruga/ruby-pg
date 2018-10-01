@@ -1,0 +1,17 @@
+language: ruby
+matrix:
+  include:
+    - rvm: 2.5
+      nodePool: default_node_pool
+      env: PGVERSION=10.0-1-linux-64
+    - rvm: 2.5
+      nodePool: shippable_shared_aarch32
+      env: PGVERSION=10.0-1-linux-64
+    - rvm: 2.5
+      nodePool: shippable_shared_aarch64
+      env: PGVERSION=10.0-1-linux-64
+build:
+  ci:
+    - |
+      echo "PGVERSION: ${PGVERSION}"
+    - true

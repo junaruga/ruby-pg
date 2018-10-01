@@ -1,0 +1,26 @@
+runtime:
+  - nodePool: shippable_shared_aarch32
+language: none
+build:
+  ci:
+    # /root/51274ab6-e8f2-47bf-9ed7-3cc86ed235d4.sh: line 86: ./postgresql-10.0-1-linux.run: cannot execute binary file: Exec format error
+    - export PGVERSION=10.0-1-linux
+    # - export PGVERSION=10.0-1-linux-64
+    - export PGPATH="/opt/PostgreSQL/10/bin"
+    # Show information
+    - uname -a
+    - id
+    - pwd
+    - "echo SHIPPABLE_BUILD_DIR: ${SHIPPABLE_BUILD_DIR}"
+    - "echo PGVERSION: ${PGVERSION}"
+    - "echo PATH: ${PATH}"
+    - |
+      docker build \
+          -f Dockerfile-i686 \
+          --build-arg PGVERSION=${PGVERSION} \
+          --build-arg PGPATH="${PGPATH}" \
+          --rm \
+          -t ruby-pg \
+          .
+    - |
+      docker --rm run -t ruby-pg rake compile test

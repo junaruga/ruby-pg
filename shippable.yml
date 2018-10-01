@@ -1,0 +1,65 @@
+language: ruby
+rvm:
+  - "2.5"
+env:
+  - PGVERSION=10.0-1-linux-x64 PATH="/opt/PostgreSQL/10/bin:$PATH"
+build:
+  ci:
+    # Environment variables
+    - |
+      echo "PGVERSION: ${PGVERSION}"
+    - |
+      echo "PATH: ${PATH}"
+    # Install PostgreSQL
+    - wget http://get.enterprisedb.com/postgresql/postgresql-$PGVERSION.run
+    - chmod +x postgresql-$PGVERSION.run
+    - ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
+    # Change to non-root user to run initdb.
+    # http://docs.shippable.com/ci/non-root/
+    # https://github.com/ambarish2012/maven-samples/blob/master/shippable.yml
+    - CI_USER="ci-user"
+    - |
+      adduser --disabled-password --gecos "" "${CI_USER}"
+    - |
+      CI_USER_BUILD_DIR=/home/${CI_USER}/build
+    - |
+      cp -r ${SHIPPABLE_BUILD_DIR} ${CI_USER_BUILD_DIR}
+    - |
+      chown -R "${CI_USER}:${CI_USER}" ${CI_USER_BUILD_DIR}
+
+    - |
+      su "${CI_USER}" - <<EOF
+      set -v
+      export PATH="/opt/PostgreSQL/10/bin:$PATH"
+      cd ${CI_USER_BUILD_DIR}
+      which initdb
+      initdb --version
+      which pg_ctl
+      pg_ctl --version
+      which psql
+      psql --version
+      bundle install --path vendor/bundle
+      bundle exec rake compile
+      bundle exec rake test
+      EOF
+
+    # - |
+    #   echo "USER: ${USER}"
+    # - id
+
+    # Check needed commands to run the unit test.
+    # - which initdb
+    # - initdb --version
+    # - which pg_ctl
+    # - pg_ctl --version
+    # - which psql
+    # - psql --version
+
+    # Install dependency gem packages.
+    # - bundle install --path vendor/bundle
+    # Compile and test
+    # - bundle exec rake compile
+    # - bundle exec rake test
+  on_failure:
+    - |
+      cat ${CI_USER_BUILD_DIR}/tmp_test_specs/setup.log || true

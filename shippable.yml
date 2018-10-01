@@ -1,0 +1,36 @@
+language: ruby
+runtime:
+  - nodePool: default_node_pool
+  - nodePool: shippable_shared_aarch32
+  - nodePool: shippable_shared_aarch64
+matrix:
+  include:
+    - rvm: 2.4
+      nodePool: default_node_pool
+      env: PGVERSION=10.0-1-linux-64 PATH="/opt/PostgreSQL/10/bin:$PATH"
+    - rvm: 2.5
+      nodePool: shippable_shared_aarch32
+      env: PGVERSION=10.0-1-linux PATH="/opt/PostgreSQL/10/bin:$PATH"
+    - rvm: 2.5
+      nodePool: shippable_shared_aarch64
+      env: PGVERSION=10.0-1-linux-64 PATH="/opt/PostgreSQL/10/bin:$PATH"
+build:
+  ci:
+    - uname -a
+    - id
+    - pwd
+    - |
+      echo "SHIPPABLE_BUILD_DIR: ${SHIPPABLE_BUILD_DIR}"
+    - |
+      echo "PGVERSION: ${PGVERSION}"
+    - |
+      echo "PATH: ${PATH}"
+    - |
+      export TEST_USER="ruby-pg"
+      useradd "${TEST_USER}"
+      chown -R "${TEST_USER}:${TEST_USER}" "${SHIPPABLE_BUILD_DIR}"
+    - |
+      wget -q "http://get.enterprisedb.com/postgresql/postgresql-${PGVERSION}.run" && \
+      chmod +x "postgresql-${PGVERSION}.run" && \
+      ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
+    - pg_ctl --version

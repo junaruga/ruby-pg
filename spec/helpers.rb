@@ -364,6 +364,7 @@ RSpec.configure do |config|
 	config.mock_with( :rspec ) do |mock|
 		mock.syntax = :expect
 	end
+	config.fail_fast = 1
 
 	if RUBY_PLATFORM =~ /mingw|mswin/
 		config.filter_run_excluding :unix

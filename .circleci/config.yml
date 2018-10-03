@@ -14,6 +14,7 @@ jobs:
       - run: wget http://get.enterprisedb.com/postgresql/postgresql-$PGVERSION.run
       - run: chmod +x postgresql-$PGVERSION.run
       - run: sudo ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
+      - run: ruby -v
       - run: bundle install --path vendor/bundle
       - run: bundle exec rake compile
       - run:

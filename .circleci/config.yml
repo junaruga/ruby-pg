@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+       - image: circleci/ruby:2.4.1-node-browsers
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: |
+          export PGVERSION=10.0-1-linux-x64
+      - run: |
+          export PATH="/opt/PostgreSQL/10/bin:$PATH"
+      - run: |
+          wget http://get.enterprisedb.com/postgresql/postgresql-$PGVERSION.run
+      - run: |
+          chmod +x postgresql-$PGVERSION.run
+      - run: |
+          sudo ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
+      - run: bundle install --path vendor/bundle
+      - run: bundle exec rake compile
+      - run: bundle exec rake test

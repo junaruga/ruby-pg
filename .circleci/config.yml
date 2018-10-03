@@ -3,12 +3,11 @@ jobs:
   build:
     docker:
       - image: circleci/ruby:2.4.1-node-browsers
-      # - image: postgres:9.4.1
-      #   environment:
-      #     POSTGRES_USER: root
+    machine: true
     environment:
       PGVERSION: "10.0-1-linux-x64"
-      # PATH: "/opt/PostgreSQL/10/bin:$PATH"
+      ARCH: i386
+      ARCH_CMD: linux32
     working_directory: ~/repo
     steps:
       - checkout

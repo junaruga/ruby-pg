@@ -2,10 +2,13 @@ version: 2
 jobs:
   build:
     docker:
-       - image: circleci/ruby:2.4.1-node-browsers
+      - image: circleci/ruby:2.4.1-node-browsers
+      # - image: postgres:9.4.1
+      #   environment:
+      #     POSTGRES_USER: root
     environment:
       PGVERSION: "10.0-1-linux-x64"
-      PATH: "/opt/PostgreSQL/10/bin:$PATH"
+      # PATH: "/opt/PostgreSQL/10/bin:$PATH"
     working_directory: ~/repo
     steps:
       - checkout
@@ -14,4 +17,8 @@ jobs:
       - run: sudo ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
       - run: bundle install --path vendor/bundle
       - run: bundle exec rake compile
-      - run: bundle exec rake test
+      - run:
+          name: test
+          command: |
+            export PATH=/opt/PostgreSQL/10/bin:$PATH
+            bundle exec rake test

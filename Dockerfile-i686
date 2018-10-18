@@ -11,9 +11,9 @@ ENV PATH "${PGPATH}:${PATH}"
 WORKDIR /build
 COPY . .
 
-RUN apt-get update -qq
+RUN apt-get update
 # To use apt-add-repository command.
-RUN apt-get install -y -qq software-properties-common
+RUN apt-get install -y software-properties-common
 # A repository to add new Rubies. The default Ruby is version 1.9 on Trusty.
 # https://launchpad.net/~brightbox/+archive/ubuntu/ruby-ng
 RUN apt-add-repository -y ppa:brightbox/ruby-ng

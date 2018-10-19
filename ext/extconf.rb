@@ -1,6 +1,8 @@
 require 'pp'
 require 'mkmf'
 
+RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
+puts `#{RbConfig::MAKEFILE_CONFIG['CC']} --version`
 
 if ENV['MAINTAINER_MODE']
 	$stderr.puts "Maintainer mode enabled."

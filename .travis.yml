@@ -34,8 +34,8 @@ matrix:
             - libpq-dev:i386
             - ruby:i386
             - ruby-dev:i386
-            - ruby25:i386
-            - ruby25-dev:i386
+            # - ruby25:i386
+            # - ruby25-dev:i386
   # Test cross compilation only with 2.4
   exclude:
     - rvm: "2.2"
@@ -55,14 +55,14 @@ before_install:
     if [ -z "$PGCROSS" ]; then
       wget http://get.enterprisedb.com/postgresql/postgresql-$PGVERSION.run && \
         chmod +x postgresql-$PGVERSION.run && \
-        sudo ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
+        sudo $SETARCH ./postgresql-$PGVERSION.run --extract-only 1 --mode unattended
     fi
 before_script:
   - echo SETARCH=$SETARCH
   - $SETARCH uname -a
 script: |
   if [ -z "$PGCROSS" ]; then
-    rake compile test
+    $SETARCH rake compile test
   else
-    rake gem:windows
+    $SETARCH rake gem:windows
   fi

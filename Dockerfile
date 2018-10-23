@@ -39,9 +39,9 @@ USER "${TEST_USER}"
 
 # Start PostgreSQL server manually for an issue.
 # CMD export PGPORT=54321 && \
-CMD rm -rf /build/tmp_test_specs && \
+# CMD rm -rf /build/tmp_test_specs && \
     # initdb -E UTF8 --no-locale -D /build/tmp_test_specs/data && \
     # pg_ctl -w -o "-k /build/tmp_test_specs" -D /build/tmp_test_specs/data start && \
-    bundle install --path vendor/bundle && \
+CMD bundle install --path vendor/bundle && \
     (bundle exec rake compile || (head -20 mkmf.log; false)) && \
     (bundle exec rake test || (head -20 ./tmp_test_specs/setup.log; false))

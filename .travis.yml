@@ -20,22 +20,12 @@ matrix:
         - PGPATH="/usr/lib/postgresql/10/bin"
       before_install:
         - |
-          docker run \
-             --rm \
-             --privileged \
-             multiarch/qemu-user-static:register --reset && \
-          docker build \
-            --rm \
-            --build-arg PGPATH="${PGPATH}" \
-            -t ruby-pg \
-            .
+          docker run --rm --privileged multiarch/qemu-user-static:register --reset
+        - |
+          docker build --rm --build-arg PGPATH="${PGPATH}" -t ruby-pg .
       script:
         - |
-          docker run \
-            --rm \
-            -t \
-            --network=host \
-            ruby-pg
+          docker run --rm -t --network=host ruby-pg
   # Test cross compilation only with 2.4
   exclude:
     - rvm: "2.2"

@@ -1,3 +1,4 @@
+FROM multiarch/qemu-user-static:i386 as qemu
 FROM i386/ubuntu:bionic
 
 ARG PGPATH
@@ -9,6 +10,10 @@ ENV DEBIAN_FRONTEND noninteractive
 
 WORKDIR /build
 COPY . .
+# Put the qemu interpreter to run the arch container with a binfmt_misc file
+# (/proc/sys/fs/binfmt_misc/qemu-$arch) that does not have a persistent flag
+# (flags: F).
+COPY --from=qemu /usr/bin/qemu-i386-static /usr/bin
 
 RUN uname -a
 RUN apt-get update -qq && \
